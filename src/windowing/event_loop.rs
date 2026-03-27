@@ -1,0 +1,190 @@
+use std::sync::Arc;
+
+use log::error;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+use winit::application::ApplicationHandler;
+use winit::error::EventLoopError;
+use winit::event::WindowEvent;
+use winit::event_loop::{ActiveEventLoop, EventLoop};
+#[cfg(target_arch = "wasm32")]
+use winit::platform::web::EventLoopExtWebSys;
+use winit::window::WindowAttributes;
+
+use crate::context::Context;
+use crate::graphics::handle::{GetSurfaceTextureResult, GraphicsConfig, GraphicsHandle};
+
+pub mod function_set;
+
+pub struct EventLoopHandle<S: 'static> {
+    #[cfg(target_arch = "wasm32")]
+    proxy: Option<winit::event_loop::EventLoopProxy<WgpuHandle>>,
+    handle: Option<GraphicsHandle>,
+    functions: function_set::FunctionSet<S>,
+    window_attributes: WindowAttributes,
+    graphics_config: GraphicsConfig,
+    state: Option<S>,
+}
+
+impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        #[allow(unused_mut)]
+        let mut window_attributes = self.window_attributes.clone();
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use wasm_bindgen::JsCast;
+            use winit::platform::web::WindowAttributesExtWebSys;
+
+            const CANVAS_ID: &str = "canvas";
+
+            let window = wgpu::web_sys::window().unwrap_throw();
+            let document = window.document().unwrap_throw();
+            let canvas = document.get_element_by_id(CANVAS_ID).unwrap_throw();
+            let html_canvas_element = canvas.unchecked_into();
+            window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
+        }
+
+        let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+        let graphics_config = self.graphics_config.clone();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // if we are not on web we can use pollster
+            self.handle =
+                Some(pollster::block_on(GraphicsHandle::new(window, graphics_config)).unwrap());
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            // on web we have to run the future asynchronously and use the
+            // proxy to send the results to the event loop
+            if let Some(proxy) = self.proxy.take() {
+                wasm_bindgen_futures::spawn_local(async move {
+                    let handle = GraphicsHandle::new(window, graphics_config)
+                        .await
+                        .expect("Unable to create canvas!!!");
+
+                    assert!(proxy.send_event(handle).is_ok());
+                });
+            }
+        }
+    }
+
+    #[allow(unused_mut)]
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: GraphicsHandle) {
+        // ihis is where proxy.send_event() ends up
+        #[cfg(target_arch = "wasm32")]
+        {
+            event.window.request_redraw();
+            event.resize(event.window.inner_size());
+        }
+
+        self.handle = Some(event);
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: winit::event::WindowEvent,
+    ) {
+        let handle = match &mut self.handle {
+            Some(handle) => handle,
+            None => return,
+        };
+
+        match event {
+            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::Resized(size) => handle.resize(size),
+            WindowEvent::RedrawRequested => {
+                handle.window.request_redraw();
+
+                if handle.surface.get_configuration().is_none() {
+                    // not configured, can't use it!
+                    return;
+                }
+
+                let output = match handle.get_surface_texture() {
+                    Ok(r) => match r {
+                        GetSurfaceTextureResult::Skip => return,
+                        GetSurfaceTextureResult::Success(surface_texture) => surface_texture,
+                    },
+                    Err(err) => {
+                        error!("{err}");
+                        return;
+                    }
+                };
+
+                let view = output
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+
+                let mut encoder =
+                    handle
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Command encoder"),
+                        });
+
+                let mut context = Context {
+                    handle,
+                    view: &view,
+                    encoder: &mut encoder,
+                };
+
+                let state = self
+                    .state
+                    .get_or_insert_with(|| self.functions.get_state(&mut context));
+
+                // TODO: delta time
+                self.functions.run_update(state, &mut context);
+
+                handle.queue.submit(std::iter::once(encoder.finish()));
+                output.present();
+            }
+            _ => (),
+        }
+    }
+}
+
+impl<S> EventLoopHandle<S> {
+    pub fn new(
+        functions: function_set::FunctionSet<S>,
+        window_attributes: WindowAttributes,
+        graphics_config: GraphicsConfig,
+        #[allow(unused, reason = "used on wasm")] event_loop: &EventLoop<GraphicsHandle>,
+    ) -> Self {
+        #[cfg(target_arch = "wasm32")]
+        let proxy = Some(event_loop.create_proxy());
+        Self {
+            #[cfg(target_arch = "wasm32")]
+            proxy,
+            functions,
+            window_attributes,
+            graphics_config,
+            state: None,
+            handle: None,
+        }
+    }
+
+    pub fn run(
+        #[allow(unused_mut, reason = "used on native but not wasm")] mut self,
+        event_loop: EventLoop<GraphicsHandle>,
+    ) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            event_loop
+                .run_app(&mut self)
+                .expect("failed to start the event loop");
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            event_loop.spawn_app(self);
+        }
+    }
+}
+
+pub fn create_event_loop() -> Result<EventLoop<GraphicsHandle>, EventLoopError> {
+    EventLoop::with_user_event().build()
+}

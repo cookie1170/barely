@@ -1,0 +1,29 @@
+[workspace]
+dependencies.wgpu = "29.0.0"
+
+[package]
+name = "barely"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+env_logger = "0.11.10"
+log = "0.4.29"
+pollster = "0.4.0"
+winit = "0.30.13"
+wgpu = { workspace = true }
+wasm_thread = "0.3.3"
+bytemuck = { version = "1.25.0", features = ["derive"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+console_log = "1.0"
+wgpu = { workspace = true, features = ["webgl"]}
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4.30"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+]}
