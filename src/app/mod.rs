@@ -1,9 +1,10 @@
+use std::time::Duration;
+
 use winit::window::{Window, WindowAttributes};
 
-use crate::context::Context;
 use crate::graphics::handle::GraphicsConfig;
 use crate::logging;
-use crate::windowing::event_loop::function_set::FunctionSet;
+use crate::windowing::event_loop::function_set::{FunctionSet, Init};
 use crate::windowing::event_loop::{self, EventLoopHandle};
 
 mod builder;
@@ -12,6 +13,7 @@ pub struct App<S> {
     init_logger: bool,
     window_attributes: WindowAttributes,
     graphics_config: GraphicsConfig,
+    fixed_delta: Duration,
     functions: FunctionSet<S>,
 }
 
@@ -35,15 +37,17 @@ impl<S: 'static> App<S> {
             self.functions,
             self.window_attributes,
             self.graphics_config,
+            self.fixed_delta,
             &event_loop,
         );
 
         event_loop_handle.run(event_loop);
     }
 
-    pub fn new(init_state: fn(&mut Context) -> S) -> Self {
+    pub fn new(init_state: Init<S>) -> Self {
         Self {
             init_logger: true,
+            fixed_delta: Duration::from_secs_f32(1.0 / 60.0),
             window_attributes: Window::default_attributes(),
             graphics_config: GraphicsConfig::default(),
             functions: FunctionSet::<S>::new(init_state),

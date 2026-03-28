@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use log::error;
 #[cfg(target_arch = "wasm32")]
@@ -11,9 +12,10 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::platform::web::EventLoopExtWebSys;
 use winit::window::WindowAttributes;
 
-use crate::context::Context;
+use crate::context::{Context, FixedContext};
 use crate::graphics::handle::{GetSurfaceTextureResult, GraphicsConfig, GraphicsHandle};
 
+mod context;
 pub mod function_set;
 
 pub struct EventLoopHandle<S: 'static> {
@@ -23,6 +25,10 @@ pub struct EventLoopHandle<S: 'static> {
     functions: function_set::FunctionSet<S>,
     window_attributes: WindowAttributes,
     graphics_config: GraphicsConfig,
+    last_frame: Instant,
+    before_last_frame: Instant,
+    fixed_buildup: Duration,
+    fixed_delta: Duration,
     state: Option<S>,
 }
 
@@ -98,9 +104,27 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => handle.resize(size),
             WindowEvent::RedrawRequested => {
+                let now = Instant::now();
+                let delta_time = self.last_frame - self.before_last_frame;
+                self.before_last_frame = self.last_frame;
+                self.last_frame = now;
+                self.fixed_buildup += delta_time;
+
+                while self.fixed_buildup > self.fixed_delta
+                    && let Some(state) = &mut self.state
+                {
+                    self.fixed_buildup -= self.fixed_delta;
+                    let fixed_context = FixedContext {
+                        delta_time: self.fixed_delta,
+                    };
+
+                    self.functions.run_fixed_update(state, &fixed_context);
+                }
+
                 handle.window.request_redraw();
 
                 if handle.surface.get_configuration().is_none() {
+                    log::warn!("not configured");
                     // not configured, can't use it!
                     return;
                 }
@@ -127,17 +151,20 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                             label: Some("Command encoder"),
                         });
 
+                handle
+                    .window
+                    .set_title(&format!("FPS: {:.02}", 1.0 / delta_time.as_secs_f32()));
+
                 let mut context = Context {
                     handle,
                     view: &view,
                     encoder: &mut encoder,
+                    delta_time,
                 };
-
                 let state = self
                     .state
                     .get_or_insert_with(|| self.functions.get_state(&mut context));
 
-                // TODO: delta time
                 self.functions.run_update(state, &mut context);
 
                 handle.queue.submit(std::iter::once(encoder.finish()));
@@ -153,6 +180,7 @@ impl<S> EventLoopHandle<S> {
         functions: function_set::FunctionSet<S>,
         window_attributes: WindowAttributes,
         graphics_config: GraphicsConfig,
+        fixed_delta: Duration,
         #[allow(unused, reason = "used on wasm")] event_loop: &EventLoop<GraphicsHandle>,
     ) -> Self {
         #[cfg(target_arch = "wasm32")]
@@ -163,6 +191,10 @@ impl<S> EventLoopHandle<S> {
             functions,
             window_attributes,
             graphics_config,
+            before_last_frame: Instant::now() - Duration::from_secs_f32(1.0 / 60.0),
+            last_frame: Instant::now(),
+            fixed_buildup: fixed_delta,
+            fixed_delta,
             state: None,
             handle: None,
         }

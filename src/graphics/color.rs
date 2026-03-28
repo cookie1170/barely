@@ -13,12 +13,12 @@ impl Color {
     }
 
     pub const fn rgba(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
-        Self {
-            red: red as f32 / 255.0,
-            green: green as f32 / 255.0,
-            blue: blue as f32 / 255.0,
-            alpha: alpha as f32 / 255.0,
-        }
+        Self::rgba_float(
+            red as f32 / 255.0,
+            green as f32 / 255.0,
+            blue as f32 / 255.0,
+            alpha as f32 / 255.0,
+        )
     }
 
     pub const fn rgb_float(red: f32, green: f32, blue: f32) -> Self {

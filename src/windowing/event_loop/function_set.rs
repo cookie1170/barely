@@ -1,9 +1,13 @@
-use crate::context::Context;
+use crate::context::{Context, FixedContext};
+
+pub type Init<S> = fn(&mut Context) -> S;
+pub type Update<S> = fn(&mut S, &mut Context);
+pub type FixedUpdate<S> = fn(&mut S, &FixedContext);
 
 pub struct FunctionSet<S> {
-    pub(crate) init_state: fn(&mut Context) -> S,
-    pub(crate) update: Vec<fn(&mut S, &mut Context)>,
-    pub(crate) fixed_update: Vec<fn(&mut S, &mut Context)>,
+    pub(crate) init_state: Init<S>,
+    pub(crate) update: Vec<Update<S>>,
+    pub(crate) fixed_update: Vec<FixedUpdate<S>>,
 }
 
 impl<S> FunctionSet<S> {
@@ -18,13 +22,13 @@ impl<S> FunctionSet<S> {
         }
     }
 
-    pub fn run_fixed_update(&self, state: &mut S, ctx: &mut Context) {
+    pub fn run_fixed_update(&self, state: &mut S, ctx: &FixedContext) {
         for function in self.fixed_update.iter() {
             function(state, ctx);
         }
     }
 
-    pub fn new(init_state: fn(&mut Context) -> S) -> Self {
+    pub fn new(init_state: Init<S>) -> Self {
         Self {
             init_state,
             update: vec![],
