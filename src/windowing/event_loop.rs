@@ -17,6 +17,7 @@ use crate::graphics::handle::{GetSurfaceTextureResult, GraphicsConfig, GraphicsH
 
 mod context;
 pub mod function_set;
+pub mod input;
 
 pub struct EventLoopHandle<S: 'static> {
     #[cfg(target_arch = "wasm32")]
@@ -170,6 +171,7 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                 handle.queue.submit(std::iter::once(encoder.finish()));
                 output.present();
             }
+            WindowEvent::KeyboardInput { event, .. } => {}
             _ => (),
         }
     }

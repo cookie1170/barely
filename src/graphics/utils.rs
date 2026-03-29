@@ -1,5 +1,7 @@
 use std::num::NonZero;
 
+use crate::context::Context;
+
 pub struct RenderPassBuilder<'a> {
     label: Option<&'static str>,
     color_attachments: &'a [Option<wgpu::RenderPassColorAttachment<'a>>],
@@ -10,9 +12,9 @@ pub struct RenderPassBuilder<'a> {
 }
 
 impl<'a> RenderPassBuilder<'a> {
-    pub fn new(label: Option<&'static str>) -> Self {
+    pub fn new(label: &'static str) -> Self {
         Self {
-            label,
+            label: Some(label),
             color_attachments: &[],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -30,9 +32,9 @@ impl<'a> RenderPassBuilder<'a> {
     }
     pub fn depth_stencil_attachment(
         mut self,
-        value: Option<wgpu::RenderPassDepthStencilAttachment<'a>>,
+        value: wgpu::RenderPassDepthStencilAttachment<'a>,
     ) -> Self {
-        self.depth_stencil_attachment = value;
+        self.depth_stencil_attachment = Some(value);
         self
     }
     pub fn timestamp_writes(mut self, value: Option<wgpu::RenderPassTimestampWrites<'a>>) -> Self {
@@ -46,6 +48,21 @@ impl<'a> RenderPassBuilder<'a> {
     pub fn multiview_mask(mut self, value: Option<NonZero<u32>>) -> Self {
         self.multiview_mask = value;
         self
+    }
+
+    pub fn load(
+        label: &'static str,
+        view: &'a wgpu::TextureView,
+        encoder: &'a mut wgpu::CommandEncoder,
+    ) -> wgpu::RenderPass<'a> {
+        let attachments = load_attachments(view);
+        Self::new(label)
+            .color_attachments(&attachments)
+            .begin(encoder)
+    }
+
+    pub fn begin(self, encoder: &mut wgpu::CommandEncoder) -> wgpu::RenderPass {
+        encoder.begin_render_pass(&self.into())
     }
 }
 
@@ -88,6 +105,19 @@ pub fn op_attachment<'a>(
     }
 }
 
+pub fn op_attachments<'a>(
+    ops: wgpu::Operations<wgpu::Color>,
+    view: &'a wgpu::TextureView,
+) -> [Option<wgpu::RenderPassColorAttachment<'a>>; 1] {
+    [Some(op_attachment(ops, view))]
+}
+
 pub fn load_attachment<'a>(view: &'a wgpu::TextureView) -> wgpu::RenderPassColorAttachment<'a> {
     op_attachment(load_store(), view)
+}
+
+pub fn load_attachments<'a>(
+    view: &'a wgpu::TextureView,
+) -> [Option<wgpu::RenderPassColorAttachment<'a>>; 1] {
+    [Some(load_attachment(view))]
 }

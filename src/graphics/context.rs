@@ -4,32 +4,44 @@ use crate::prelude::*;
 
 impl<'a> Context<'a> {
     pub fn clear_screen(&mut self, color: Color) {
-        let attachments = [Some(utils::op_attachment(
-            utils::store(wgpu::LoadOp::Clear(color.into())),
-            self.view,
-        ))];
+        let attachments =
+            utils::op_attachments(utils::store(wgpu::LoadOp::Clear(color.into())), self.view);
 
-        let pass = RenderPassBuilder::new(Some("Clear screen")).color_attachments(&attachments);
-
-        self.encoder.begin_render_pass(&pass.into());
+        RenderPassBuilder::new("Clear screen")
+            .color_attachments(&attachments)
+            .begin(self.encoder);
     }
 
-    pub fn draw_vertex_buffer_unindexed<M: Material>(
+    pub fn draw_vertices_unindexed<M: Material>(
         &mut self,
         buffer: &impl GetBuffer,
         material: &MaterialHandle<M>,
     ) {
-        let attachments = [Some(utils::load_attachment(self.view))];
-        let pass = RenderPassBuilder::new(Some("Draw vertex buffer unindexed"))
-            .color_attachments(&attachments);
+        let mut pass = RenderPassBuilder::load("Draw vertices unindexed", self.view, self.encoder);
 
-        let mut pass = self.encoder.begin_render_pass(&pass.into());
         let pipeline = material.get_pipeline();
-        let length = buffer.get_length();
         let buffer = buffer.get_buffer(self.handle);
 
         pass.set_pipeline(pipeline);
         pass.set_vertex_buffer(0, buffer.slice(..));
-        pass.draw(0..length, 0..1);
+        pass.draw(0..buffer.get_length(), 0..1);
+    }
+
+    pub fn draw_vertices<M: Material>(
+        &mut self,
+        vertex_buffer: &impl GetBuffer,
+        index_buffer: &impl GetBuffer,
+        material: &MaterialHandle<M>,
+    ) {
+        let mut pass = RenderPassBuilder::load("Draw vertices", self.view, self.encoder);
+
+        let pipeline = material.get_pipeline();
+        pass.set_vertex_buffer(0, vertex_buffer.get_buffer(self.handle).slice(..));
+        pass.set_index_buffer(
+            index_buffer.get_buffer(self.handle).slice(..),
+            wgpu::IndexFormat::Uint32,
+        );
+        pass.set_pipeline(pipeline);
+        pass.draw_indexed(0..index_buffer.get_length(), 0, 0..1);
     }
 }

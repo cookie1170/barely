@@ -18,11 +18,6 @@ struct MovingVertex {
 fn main() {
     let mut app = App::<State>::new(init_state);
 
-    app.graphics_config(barely::graphics::handle::GraphicsConfig {
-        vsync: false,
-        ..Default::default()
-    });
-    info!("start");
     app.title("Vertex buffer");
     app.update(update);
     app.fixed_update(fixed_update);
@@ -41,8 +36,7 @@ impl Material for CoolMaterial {
 
 fn init_state(ctx: &mut Context) -> State {
     let material = ctx.create_material_handle(CoolMaterial);
-    let vertex_buffer =
-        ctx.create_vec_buffer(vec![Vertex::default(); 3], wgpu::BufferUsages::VERTEX);
+    let vertex_buffer = ctx.create_vec_buffer(vec![Vertex::default(); 3], BufferUsages::VERTEX);
     let moving_vertices = vec![
         MovingVertex {
             position: [0.0, 0.5],
@@ -78,18 +72,22 @@ fn fixed_update(state: &mut State, ctx: &FixedContext) {
 
         if vertex.position[0] > 1.0 {
             vertex.velocity[0] *= -1.0;
+            vertex.position[0] = 0.99;
         }
 
         if vertex.position[0] < -1.0 {
             vertex.velocity[0] *= -1.0;
+            vertex.position[0] = -0.99;
         }
 
         if vertex.position[1] > 1.0 {
             vertex.velocity[1] *= -1.0;
+            vertex.position[1] = 0.99;
         }
 
         if vertex.position[1] < -1.0 {
             vertex.velocity[1] *= -1.0;
+            vertex.position[1] = -0.99;
         }
     }
 
@@ -103,5 +101,5 @@ fn fixed_update(state: &mut State, ctx: &FixedContext) {
 
 fn update(state: &mut State, ctx: &mut Context) {
     ctx.clear_screen(Color::rgb(14, 26, 37));
-    ctx.draw_vertex_buffer_unindexed(&state.vertex_buffer, &state.material);
+    ctx.draw_vertices_unindexed(&state.vertex_buffer, &state.material);
 }
