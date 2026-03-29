@@ -1,19 +1,22 @@
 use std::time::Duration;
 
 use crate::graphics::handle::GraphicsHandle;
+use crate::prelude::InputState;
 
 pub struct Context<'a> {
     pub handle: &'a mut GraphicsHandle,
     pub encoder: &'a mut wgpu::CommandEncoder,
     pub view: &'a wgpu::TextureView,
     pub(crate) delta_time: Duration,
+    pub(crate) input_state: &'a InputState,
 }
 
-pub struct FixedContext {
+pub struct FixedContext<'a> {
     pub(crate) delta_time: Duration,
+    pub(crate) input_state: &'a InputState,
 }
 
-impl FixedContext {
+impl<'a> FixedContext<'a> {
     pub fn delta_time(&self) -> Duration {
         self.delta_time
     }

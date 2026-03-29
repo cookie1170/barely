@@ -6,13 +6,15 @@ use log::error;
 use wasm_bindgen::prelude::*;
 use winit::application::ApplicationHandler;
 use winit::error::EventLoopError;
-use winit::event::WindowEvent;
+use winit::event::{KeyEvent, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::keyboard::PhysicalKey;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::EventLoopExtWebSys;
 use winit::window::WindowAttributes;
 
 use crate::context::{Context, FixedContext};
+use crate::event_loop::input::InputState;
 use crate::graphics::handle::{GetSurfaceTextureResult, GraphicsConfig, GraphicsHandle};
 
 mod context;
@@ -30,6 +32,8 @@ pub struct EventLoopHandle<S: 'static> {
     before_last_frame: Instant,
     fixed_buildup: Duration,
     fixed_delta: Duration,
+    input_state: InputState,
+    fixed_input_state: InputState,
     state: Option<S>,
 }
 
@@ -117,9 +121,13 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                     self.fixed_buildup -= self.fixed_delta;
                     let fixed_context = FixedContext {
                         delta_time: self.fixed_delta,
+                        input_state: &self.fixed_input_state,
                     };
 
                     self.functions.run_fixed_update(state, &fixed_context);
+
+                    // we ran the update, now clear out the input
+                    self.fixed_input_state.on_update();
                 }
 
                 handle.window.request_redraw();
@@ -152,26 +160,58 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                             label: Some("Command encoder"),
                         });
 
-                handle
-                    .window
-                    .set_title(&format!("FPS: {:.02}", 1.0 / delta_time.as_secs_f32()));
+                // handle
+                //     .window
+                //     .set_title(&format!("FPS: {:.02}", 1.0 / delta_time.as_secs_f32()));
 
                 let mut context = Context {
                     handle,
                     view: &view,
                     encoder: &mut encoder,
                     delta_time,
+                    input_state: &self.input_state,
                 };
+
                 let state = self
                     .state
                     .get_or_insert_with(|| self.functions.get_state(&mut context));
 
                 self.functions.run_update(state, &mut context);
+                // we ran the update, now clear the input
+                self.input_state.on_update();
 
                 handle.queue.submit(std::iter::once(encoder.finish()));
                 output.present();
             }
-            WindowEvent::KeyboardInput { event, .. } => {}
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key,
+                        state,
+                        repeat: false,
+                        ..
+                    },
+                ..
+            } => {
+                let PhysicalKey::Code(key) = physical_key else {
+                    return;
+                };
+
+                match state {
+                    winit::event::ElementState::Pressed => {
+                        self.input_state.on_pressed(key);
+                        self.fixed_input_state.on_pressed(key);
+                    }
+                    winit::event::ElementState::Released => {
+                        self.input_state.on_released(key);
+                        self.fixed_input_state.on_released(key);
+                    }
+                }
+            }
+            WindowEvent::Focused(false) => {
+                self.input_state.on_focus_lost();
+                self.fixed_input_state.on_focus_lost();
+            }
             _ => (),
         }
     }
@@ -199,6 +239,8 @@ impl<S> EventLoopHandle<S> {
             fixed_delta,
             state: None,
             handle: None,
+            input_state: InputState::default(),
+            fixed_input_state: InputState::default(),
         }
     }
 

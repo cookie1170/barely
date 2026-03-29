@@ -1,7 +1,5 @@
 use std::num::NonZero;
 
-use crate::context::Context;
-
 pub struct RenderPassBuilder<'a> {
     label: Option<&'static str>,
     color_attachments: &'a [Option<wgpu::RenderPassColorAttachment<'a>>],
@@ -61,7 +59,7 @@ impl<'a> RenderPassBuilder<'a> {
             .begin(encoder)
     }
 
-    pub fn begin(self, encoder: &mut wgpu::CommandEncoder) -> wgpu::RenderPass {
+    pub fn begin<'e>(self, encoder: &'e mut wgpu::CommandEncoder) -> wgpu::RenderPass<'e> {
         encoder.begin_render_pass(&self.into())
     }
 }

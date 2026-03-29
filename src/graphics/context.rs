@@ -20,10 +20,9 @@ impl<'a> Context<'a> {
         let mut pass = RenderPassBuilder::load("Draw vertices unindexed", self.view, self.encoder);
 
         let pipeline = material.get_pipeline();
-        let buffer = buffer.get_buffer(self.handle);
 
         pass.set_pipeline(pipeline);
-        pass.set_vertex_buffer(0, buffer.slice(..));
+        pass.set_vertex_buffer(0, buffer.get_buffer(self.handle).slice(..));
         pass.draw(0..buffer.get_length(), 0..1);
     }
 

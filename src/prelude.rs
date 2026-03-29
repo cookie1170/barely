@@ -1,8 +1,10 @@
 pub use log::{debug, error, info, trace, warn};
 pub use wgpu::BufferUsages;
+pub use winit::keyboard::KeyCode;
 
 pub use crate::app::App;
 pub use crate::context::{Context, FixedContext};
+pub use crate::event_loop::input::InputState;
 pub use crate::graphics::buffer::slice::SliceBuffer;
 pub use crate::graphics::buffer::vec::VecBuffer;
 pub use crate::graphics::color::{self, Color};

@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use winit::window::{Window, WindowAttributes};
 
+use crate::event_loop::function_set::{FunctionSet, Init};
+use crate::event_loop::{self, EventLoopHandle};
 use crate::graphics::handle::GraphicsConfig;
 use crate::logging;
-use crate::windowing::event_loop::function_set::{FunctionSet, Init};
-use crate::windowing::event_loop::{self, EventLoopHandle};
 
 mod builder;
 
@@ -52,5 +52,11 @@ impl<S: 'static> App<S> {
             graphics_config: GraphicsConfig::default(),
             functions: FunctionSet::<S>::new(init_state),
         }
+    }
+}
+
+impl<S: Default + 'static> Default for App<S> {
+    fn default() -> Self {
+        App::new(|_| S::default())
     }
 }

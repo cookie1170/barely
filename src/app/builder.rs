@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use winit::window::WindowAttributes;
 
+use crate::event_loop::function_set::{FixedUpdate, Update};
 use crate::graphics::handle::GraphicsConfig;
-use crate::windowing::event_loop::function_set::{FixedUpdate, Update};
 
 impl<S> super::App<S> {
     pub fn init_logger(&mut self) -> &mut Self {

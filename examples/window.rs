@@ -1,7 +1,7 @@
 use barely::prelude::*;
 
 fn main() {
-    let mut app = App::new(|_| ());
+    let mut app = App::<()>::default();
 
     app.title("Hello there");
     app.update(update);
