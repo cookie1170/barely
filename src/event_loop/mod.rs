@@ -1,6 +1,7 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
+use instant::Instant;
 use log::error;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -21,19 +22,33 @@ mod context;
 pub mod function_set;
 pub mod input;
 
+/// A handle to the [`EventLoop`](`winit::event_loop::EventLoop`),
+/// which includes relevant info
 pub struct EventLoopHandle<S: 'static> {
+    /// An [`EventLoopProxy`](winit::event_loop::EventLoopProxy), which is required on WASM because the creation of a [`GraphicsHandle`] is async
     #[cfg(target_arch = "wasm32")]
-    proxy: Option<winit::event_loop::EventLoopProxy<WgpuHandle>>,
+    proxy: Option<winit::event_loop::EventLoopProxy<GraphicsHandle>>,
+    /// A handle to the underlying graphics API (wgpu)
+    ///
+    /// See [`GraphicsHandle`]
     handle: Option<GraphicsHandle>,
+    /// Update and fixed update functions
     functions: function_set::FunctionSet<S>,
+    /// Settings for the window
     window_attributes: WindowAttributes,
+    /// Configuration for the graphics API
     graphics_config: GraphicsConfig,
+    /// When the last frame started (used for delta time calculation)
     last_frame: Instant,
-    before_last_frame: Instant,
+    /// How long behind are we on fixed updates? A fixed update is triggered when this exceeds [`fixed_delta`]
     fixed_buildup: Duration,
+    /// How much time should pass between fixed updates
     fixed_delta: Duration,
+    /// The current input state
     input_state: InputState,
+    /// The current input state for fixed updates. Has to be different because otherwise `just_pressed` events may get swallowed
     fixed_input_state: InputState,
+    /// The current state of the app
     state: Option<S>,
 }
 
@@ -100,9 +115,8 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        let handle = match &mut self.handle {
-            Some(handle) => handle,
-            None => return,
+        let Some(handle) = &mut self.handle else {
+            return;
         };
 
         match event {
@@ -110,8 +124,7 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
             WindowEvent::Resized(size) => handle.resize(size),
             WindowEvent::RedrawRequested => {
                 let now = Instant::now();
-                let delta_time = self.last_frame - self.before_last_frame;
-                self.before_last_frame = self.last_frame;
+                let delta_time = now - self.last_frame;
                 self.last_frame = now;
                 self.fixed_buildup += delta_time;
 
@@ -218,6 +231,7 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
 }
 
 impl<S> EventLoopHandle<S> {
+    /// Creates a new [`EventLoopHandle`] using the given parameters
     pub fn new(
         functions: function_set::FunctionSet<S>,
         window_attributes: WindowAttributes,
@@ -233,8 +247,8 @@ impl<S> EventLoopHandle<S> {
             functions,
             window_attributes,
             graphics_config,
-            before_last_frame: Instant::now() - Duration::from_secs_f32(1.0 / 60.0),
             last_frame: Instant::now(),
+            // initialize it to fixed_delta to have a fixed update right away
             fixed_buildup: fixed_delta,
             fixed_delta,
             state: None,
@@ -244,23 +258,31 @@ impl<S> EventLoopHandle<S> {
         }
     }
 
+    /// Runs the event loop
+    ///
+    /// # Errors
+    /// When `EventLoop::run_app` fails (see [`EventLoopError`](winit::error::EventLoopError))
     pub fn run(
         #[allow(unused_mut, reason = "used on native but not wasm")] mut self,
         event_loop: EventLoop<GraphicsHandle>,
-    ) {
+    ) -> anyhow::Result<()> {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            event_loop
-                .run_app(&mut self)
-                .expect("failed to start the event loop");
+            event_loop.run_app(&mut self)?;
         }
         #[cfg(target_arch = "wasm32")]
         {
             event_loop.spawn_app(self);
         }
+
+        Ok(())
     }
 }
 
+/// Creates a new [`EventLoop`](winit::event_loop::EventLoop)
+///
+/// # Errors
+/// When creating the event loop fails (see [`EventLoopError`](winit::error::EventLoopError))
 pub fn create_event_loop() -> Result<EventLoop<GraphicsHandle>, EventLoopError> {
     EventLoop::with_user_event().build()
 }

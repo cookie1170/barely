@@ -8,10 +8,12 @@ pub struct Color {
 }
 
 impl Color {
+    #[must_use]
     pub const fn rgb(red: u8, green: u8, blue: u8) -> Self {
         Self::rgba(red, green, blue, u8::MAX)
     }
 
+    #[must_use]
     pub const fn rgba(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
         Self::rgba_float(
             red as f32 / 255.0,
@@ -21,10 +23,12 @@ impl Color {
         )
     }
 
+    #[must_use]
     pub const fn rgb_float(red: f32, green: f32, blue: f32) -> Self {
         Self::rgba_float(red, green, blue, 1.0)
     }
 
+    #[must_use]
     pub const fn rgba_float(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
         Self {
             red,
@@ -38,10 +42,10 @@ impl Color {
 impl From<Color> for wgpu::Color {
     fn from(value: Color) -> Self {
         Self {
-            r: value.red as f64,
-            g: value.green as f64,
-            b: value.blue as f64,
-            a: value.alpha as f64,
+            r: f64::from(value.red),
+            g: f64::from(value.green),
+            b: f64::from(value.blue),
+            a: f64::from(value.alpha),
         }
     }
 }

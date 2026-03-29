@@ -39,6 +39,7 @@ impl Shader {
 }
 
 impl ShaderModules {
+    #[must_use]
     pub fn vertex(&self) -> &wgpu::ShaderModule {
         match self {
             ShaderModules::Single(shader_module) => shader_module,
@@ -49,6 +50,7 @@ impl ShaderModules {
         }
     }
 
+    #[must_use]
     pub fn fragment(&self) -> &wgpu::ShaderModule {
         match self {
             ShaderModules::Single(shader_module) => shader_module,
@@ -61,6 +63,7 @@ impl ShaderModules {
 }
 
 impl ShaderSource {
+    #[must_use]
     pub fn create_shader_modules(self, device: &wgpu::Device) -> ShaderModules {
         match self {
             ShaderSource::Single(shader_source) => {

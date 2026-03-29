@@ -14,7 +14,7 @@ where
     buffer: wgpu::Buffer,
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn create_slice_buffer<T>(
         &mut self,
         items: impl Into<Box<[T]>>,
@@ -46,10 +46,12 @@ impl<T> SliceBuffer<T>
 where
     T: bytemuck::Pod + bytemuck::Zeroable,
 {
+    #[must_use]
     pub fn items(&self) -> &[T] {
         &self.items
     }
 
+    #[must_use]
     pub fn usage(&self) -> wgpu::BufferUsages {
         self.usage
     }
@@ -63,6 +65,10 @@ where
         &self.buffer
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "i don't think anybody is having >2 billion elements in their buffer"
+    )]
     fn get_length(&self) -> u32 {
         self.items.len() as u32
     }

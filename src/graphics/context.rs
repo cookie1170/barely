@@ -2,7 +2,7 @@ use crate::graphics::buffer::GetBuffer;
 use crate::graphics::utils::{self, RenderPassBuilder};
 use crate::prelude::*;
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn clear_screen(&mut self, color: Color) {
         let attachments =
             utils::op_attachments(utils::store(wgpu::LoadOp::Clear(color.into())), self.view);

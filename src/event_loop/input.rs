@@ -10,18 +10,22 @@ pub struct InputState {
 }
 
 impl InputState {
+    #[must_use]
     pub fn pressed(&self, key: KeyCode) -> bool {
         self.pressed.contains(&key)
     }
 
+    #[must_use]
     pub fn released(&self, key: KeyCode) -> bool {
         !self.pressed.contains(&key)
     }
 
+    #[must_use]
     pub fn just_pressed(&self, key: KeyCode) -> bool {
         self.just_pressed.contains(&key)
     }
 
+    #[must_use]
     pub fn just_released(&self, key: KeyCode) -> bool {
         self.just_released.contains(&key)
     }
@@ -46,19 +50,21 @@ impl InputState {
     pub(super) fn on_focus_lost(&mut self) {
         // if the window loses focus, we want to count all keys that are currently pressed as getting released
         // this only automatically works on windows and x11, so we need to do it manually
-        for key in self.pressed.iter().cloned().collect::<Vec<_>>() {
+        for key in self.pressed.iter().copied().collect::<Vec<_>>() {
             self.on_released(key);
         }
     }
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
+    #[must_use]
     pub fn input(&self) -> &InputState {
         self.input_state
     }
 }
 
-impl<'a> FixedContext<'a> {
+impl FixedContext<'_> {
+    #[must_use]
     pub fn input(&self) -> &InputState {
         self.input_state
     }

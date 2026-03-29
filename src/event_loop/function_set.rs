@@ -17,13 +17,13 @@ impl<S> FunctionSet<S> {
     }
 
     pub fn run_update(&self, state: &mut S, ctx: &mut Context) {
-        for function in self.update.iter() {
+        for function in &self.update {
             function(state, ctx);
         }
     }
 
     pub fn run_fixed_update(&self, state: &mut S, ctx: &FixedContext) {
-        for function in self.fixed_update.iter() {
+        for function in &self.fixed_update {
             function(state, ctx);
         }
     }

@@ -9,12 +9,18 @@ use crate::logging;
 
 mod builder;
 
+/// The entrypoint to your app
 pub struct App<S> {
-    init_logger: bool,
-    window_attributes: WindowAttributes,
-    graphics_config: GraphicsConfig,
-    fixed_delta: Duration,
-    functions: FunctionSet<S>,
+    /// Should the logger be initialized (default: true)
+    pub init_logger: bool,
+    /// The settings for the window (default: [`Window::default_attributes`](winit::window::Window::default_attributes))
+    pub window_attributes: WindowAttributes,
+    /// Configuration for the underlying graphics api
+    pub graphics_config: GraphicsConfig,
+    /// How long should a fixed update last
+    pub fixed_delta: Duration,
+    /// Update and fixed update functions
+    pub functions: FunctionSet<S>,
 }
 
 impl<S: 'static> App<S> {
@@ -29,6 +35,10 @@ impl<S: 'static> App<S> {
         }
     }
 
+    /// Starts the app
+    ///
+    /// # Panics
+    /// When creating or starting the event loop fails
     pub fn run(mut self) {
         self.init();
 
@@ -41,9 +51,12 @@ impl<S: 'static> App<S> {
             &event_loop,
         );
 
-        event_loop_handle.run(event_loop);
+        event_loop_handle
+            .run(event_loop)
+            .expect("failed to start the event loop");
     }
 
+    /// Creates a new [`App`] with a function to initialize the state
     pub fn new(init_state: Init<S>) -> Self {
         Self {
             init_logger: true,

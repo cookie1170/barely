@@ -1,5 +1,7 @@
-[workspace]
-dependencies.wgpu = "29.0.0"
+[workspace.dependencies]
+wgpu = "29.0.0"
+# std::time::Instant::now() doesn't work on wasm because of course
+instant = "0.1.13"
 
 [package]
 name = "barely"
@@ -13,17 +15,15 @@ log = "0.4.29"
 pollster = "0.4.0"
 winit = "0.30.13"
 wgpu = { workspace = true }
+instant = { workspace = true }
 wasm_thread = "0.3.3"
 bytemuck = { version = "1.25.0", features = ["derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"
 console_log = "1.0"
-wgpu = { workspace = true, features = ["webgl"]}
+wgpu = { workspace = true, features = ["webgl"] }
+instant = { workspace = true, features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4.30"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-]}
+web-sys = { version = "0.3", features = ["Document", "Window", "Element"] }

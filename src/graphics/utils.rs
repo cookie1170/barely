@@ -10,6 +10,7 @@ pub struct RenderPassBuilder<'a> {
 }
 
 impl<'a> RenderPassBuilder<'a> {
+    #[must_use]
     pub fn new(label: &'static str) -> Self {
         Self {
             label: Some(label),
@@ -21,6 +22,7 @@ impl<'a> RenderPassBuilder<'a> {
         }
     }
 
+    #[must_use]
     pub fn color_attachments(
         mut self,
         value: &'a [Option<wgpu::RenderPassColorAttachment<'a>>],
@@ -28,6 +30,7 @@ impl<'a> RenderPassBuilder<'a> {
         self.color_attachments = value;
         self
     }
+    #[must_use]
     pub fn depth_stencil_attachment(
         mut self,
         value: wgpu::RenderPassDepthStencilAttachment<'a>,
@@ -35,14 +38,17 @@ impl<'a> RenderPassBuilder<'a> {
         self.depth_stencil_attachment = Some(value);
         self
     }
+    #[must_use]
     pub fn timestamp_writes(mut self, value: Option<wgpu::RenderPassTimestampWrites<'a>>) -> Self {
         self.timestamp_writes = value;
         self
     }
+    #[must_use]
     pub fn occlusion_query_set(mut self, value: Option<&'a wgpu::QuerySet>) -> Self {
         self.occlusion_query_set = value;
         self
     }
+    #[must_use]
     pub fn multiview_mask(mut self, value: Option<NonZero<u32>>) -> Self {
         self.multiview_mask = value;
         self
@@ -59,7 +65,7 @@ impl<'a> RenderPassBuilder<'a> {
             .begin(encoder)
     }
 
-    pub fn begin<'e>(self, encoder: &'e mut wgpu::CommandEncoder) -> wgpu::RenderPass<'e> {
+    pub fn begin(self, encoder: &mut wgpu::CommandEncoder) -> wgpu::RenderPass<'_> {
         encoder.begin_render_pass(&self.into())
     }
 }
@@ -84,6 +90,7 @@ pub fn store<T>(op: wgpu::LoadOp<T>) -> wgpu::Operations<T> {
     }
 }
 
+#[must_use]
 pub fn load_store<T>() -> wgpu::Operations<T> {
     wgpu::Operations {
         load: wgpu::LoadOp::Load,
@@ -91,10 +98,11 @@ pub fn load_store<T>() -> wgpu::Operations<T> {
     }
 }
 
-pub fn op_attachment<'a>(
+#[must_use]
+pub fn op_attachment(
     ops: wgpu::Operations<wgpu::Color>,
-    view: &'a wgpu::TextureView,
-) -> wgpu::RenderPassColorAttachment<'a> {
+    view: &wgpu::TextureView,
+) -> wgpu::RenderPassColorAttachment<'_> {
     wgpu::RenderPassColorAttachment {
         view,
         depth_slice: None,
@@ -103,19 +111,22 @@ pub fn op_attachment<'a>(
     }
 }
 
-pub fn op_attachments<'a>(
+#[must_use]
+pub fn op_attachments(
     ops: wgpu::Operations<wgpu::Color>,
-    view: &'a wgpu::TextureView,
-) -> [Option<wgpu::RenderPassColorAttachment<'a>>; 1] {
+    view: &wgpu::TextureView,
+) -> [Option<wgpu::RenderPassColorAttachment<'_>>; 1] {
     [Some(op_attachment(ops, view))]
 }
 
-pub fn load_attachment<'a>(view: &'a wgpu::TextureView) -> wgpu::RenderPassColorAttachment<'a> {
+#[must_use]
+pub fn load_attachment(view: &wgpu::TextureView) -> wgpu::RenderPassColorAttachment<'_> {
     op_attachment(load_store(), view)
 }
 
-pub fn load_attachments<'a>(
-    view: &'a wgpu::TextureView,
-) -> [Option<wgpu::RenderPassColorAttachment<'a>>; 1] {
+#[must_use]
+pub fn load_attachments(
+    view: &wgpu::TextureView,
+) -> [Option<wgpu::RenderPassColorAttachment<'_>>; 1] {
     [Some(load_attachment(view))]
 }

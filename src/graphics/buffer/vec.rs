@@ -14,7 +14,7 @@ where
     buffer: RefCell<wgpu::Buffer>,
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn create_vec_buffer<T>(
         &mut self,
         items: impl Into<Vec<T>>,
@@ -70,7 +70,9 @@ where
 
             *self.buffer.borrow_mut() = buffer;
         }
-        // SAFETY: `get_buffer` must not be called while a reference to the buffer exists!
+
+        // SAFETY: if a reference to `self.buffer` exists, then the mutating branch above will not be reached
+        // so borrowing unguarded here is okay, since direct access to the `RefCell` is never given outside of this method
         let buffer = unsafe { self.buffer.try_borrow_unguarded() }.unwrap();
 
         handle
@@ -80,6 +82,10 @@ where
         buffer
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "i don't think anybody is having >2 billion elements in their buffer"
+    )]
     fn get_length(&self) -> u32 {
         self.items.len() as u32
     }

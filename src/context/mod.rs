@@ -16,11 +16,13 @@ pub struct FixedContext<'a> {
     pub(crate) input_state: &'a InputState,
 }
 
-impl<'a> FixedContext<'a> {
+impl FixedContext<'_> {
+    #[must_use]
     pub fn delta_time(&self) -> Duration {
         self.delta_time
     }
 
+    #[must_use]
     pub fn delta_secs(&self) -> f32 {
         self.delta_time.as_secs_f32()
     }

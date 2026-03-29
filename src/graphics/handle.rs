@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use log::warn;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -21,6 +22,7 @@ pub struct GraphicsConfig {
     pub power_preference: wgpu::PowerPreference,
     pub backend_options: wgpu::BackendOptions,
     pub memory_budget_thresholds: wgpu::MemoryBudgetThresholds,
+    pub memory_hints: wgpu::MemoryHints,
     pub flags: wgpu::InstanceFlags,
     pub required_features: wgpu::Features,
     pub required_limits: wgpu::Limits,
@@ -28,6 +30,12 @@ pub struct GraphicsConfig {
 }
 
 impl GraphicsHandle {
+    /// Creates a new [`GraphicsHandle`] with the given [`GraphicsConfig`] and using the given [`Window`](winit::window::Window)
+    ///
+    /// # Errors
+    /// - when creating a [`wgpu::Surface`] fails
+    /// - when requesting a [`wgpu::Adapter`] fails
+    /// - when requesting  a [`wgpu::Device`] fails
     pub async fn new(window: Arc<Window>, config: GraphicsConfig) -> anyhow::Result<Self> {
         let mut descriptor = wgpu::InstanceDescriptor {
             display: None,
@@ -41,7 +49,7 @@ impl GraphicsHandle {
         let instance = wgpu::Instance::new(descriptor);
         let surface = instance
             .create_surface(Arc::clone(&window))
-            .expect("failed to create wgpu surface");
+            .context("failed to create wgpu surface")?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -51,7 +59,7 @@ impl GraphicsHandle {
                 compatible_surface: Some(&surface),
             })
             .await
-            .expect("failed to create wgpu adapter");
+            .context("failed to create wgpu adapter")?;
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -59,11 +67,11 @@ impl GraphicsHandle {
                 required_features: config.required_features,
                 required_limits: config.required_limits,
                 experimental_features: config.wgpu_experimental_features,
-                memory_hints: Default::default(),
+                memory_hints: config.memory_hints,
                 trace: wgpu::Trace::Off,
             })
             .await
-            .expect("failed to request wgpu device");
+            .context("failed to request wgpu device")?;
 
         let surface_caps = surface.get_capabilities(&adapter);
         // is hardcoding it a good idea? probably not, but who cares anyway
@@ -142,9 +150,10 @@ impl Default for GraphicsConfig {
             vsync: true,
             force_fallback_adapter: false,
             power_preference: wgpu::PowerPreference::None,
-            backend_options: Default::default(),
-            memory_budget_thresholds: Default::default(),
-            flags: Default::default(),
+            backend_options: wgpu::BackendOptions::default(),
+            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
+            memory_hints: wgpu::MemoryHints::default(),
+            flags: wgpu::InstanceFlags::default(),
             required_features: wgpu::Features::empty(),
             wgpu_experimental_features: wgpu::ExperimentalFeatures::disabled(),
             #[cfg(not(target_arch = "wasm32"))]

@@ -11,7 +11,7 @@ impl<M: Material> MaterialHandle<M> {
     }
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn create_material_handle<M: Material>(&mut self, material: M) -> MaterialHandle<M> {
         let (device, config) = (&self.handle.device, &self.handle.config);
 
@@ -89,6 +89,6 @@ impl<M: Material + std::fmt::Debug> std::fmt::Debug for MaterialHandle<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MaterialHandle")
             .field("inner", &self.inner)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
