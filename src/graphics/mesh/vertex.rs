@@ -3,7 +3,7 @@ use crate::prelude::*;
 #[repr(C)]
 #[derive(Copy, Clone, Debug, PartialEq, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    pub position: [f32; 3],
+    pub position: Vec3,
     pub color: Color,
 }
 

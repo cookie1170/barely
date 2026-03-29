@@ -12,3 +12,5 @@ pub use crate::graphics::handle::{GraphicsConfig, GraphicsHandle};
 pub use crate::graphics::material::handle::MaterialHandle;
 pub use crate::graphics::material::{Material, Shader, ShaderSource};
 pub use crate::graphics::mesh::vertex::Vertex;
+pub use crate::math::f32::*;
+pub use crate::math::swizzles::*;

@@ -9,8 +9,8 @@ struct State {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 struct MovingVertex {
-    position: [f32; 2],
-    velocity: [f32; 2],
+    position: Vec2,
+    velocity: Vec2,
     color: Color,
     index: usize,
 }
@@ -39,20 +39,20 @@ fn init_state(ctx: &mut Context) -> State {
     let vertex_buffer = ctx.create_vec_buffer(vec![Vertex::default(); 3], BufferUsages::VERTEX);
     let moving_vertices = vec![
         MovingVertex {
-            position: [0.0, 0.5],
-            velocity: [1.0, 1.0],
+            position: Vec2::new(0.0, 0.5),
+            velocity: Vec2::new(1.0, 1.0),
             color: Color::rgb(255, 0, 0),
             index: 0,
         },
         MovingVertex {
-            position: [-0.5, -0.5],
-            velocity: [-1.0, -1.0],
+            position: Vec2::new(-0.5, -0.5),
+            velocity: Vec2::new(-1.0, -1.0),
             color: Color::rgb(0, 255, 0),
             index: 1,
         },
         MovingVertex {
-            position: [0.5, -0.5],
-            velocity: [1.0, -1.0],
+            position: Vec2::new(0.5, -0.5),
+            velocity: Vec2::new(1.0, -1.0),
             color: Color::rgb(0, 0, 255),
             index: 2,
         },
@@ -67,34 +67,32 @@ fn init_state(ctx: &mut Context) -> State {
 
 fn fixed_update(state: &mut State, ctx: &FixedContext) {
     for vertex in state.moving_vertices.iter_mut() {
-        vertex.position[0] += vertex.velocity[0] * ctx.delta_secs();
-        vertex.position[1] += vertex.velocity[1] * ctx.delta_secs();
+        vertex.position += vertex.velocity * ctx.delta_secs();
 
-        if vertex.position[0] > 1.0 {
-            vertex.velocity[0] *= -1.0;
-            vertex.position[0] = 0.99;
+        if vertex.position.x > 1.0 {
+            vertex.velocity.x *= -1.0;
+            vertex.position.x = 0.99;
         }
 
-        if vertex.position[0] < -1.0 {
-            vertex.velocity[0] *= -1.0;
-            vertex.position[0] = -0.99;
+        if vertex.position.x < -1.0 {
+            vertex.velocity.x *= -1.0;
+            vertex.position.x = -0.99;
         }
 
-        if vertex.position[1] > 1.0 {
-            vertex.velocity[1] *= -1.0;
-            vertex.position[1] = 0.99;
+        if vertex.position.y > 1.0 {
+            vertex.velocity.y *= -1.0;
+            vertex.position.y = 0.99;
         }
 
-        if vertex.position[1] < -1.0 {
-            vertex.velocity[1] *= -1.0;
-            vertex.position[1] = -0.99;
+        if vertex.position.y < -1.0 {
+            vertex.velocity.y *= -1.0;
+            vertex.position.y = -0.99;
         }
     }
 
     for moving_vertex in state.moving_vertices.iter() {
         let vertex = &mut state.vertex_buffer.items[moving_vertex.index];
-        vertex.position[0] = moving_vertex.position[0];
-        vertex.position[1] = moving_vertex.position[1];
+        vertex.position = moving_vertex.position.extend(0.0);
         vertex.color = moving_vertex.color;
     }
 }
