@@ -4,6 +4,18 @@ use std::sync::{LazyLock, Mutex, MutexGuard};
 
 use crate::prelude::*;
 
+#[macro_export]
+macro_rules! wesl_shaders {
+    ($($package:expr => $path:expr)+) => {
+        $(
+            ::barely::graphics::material::Shader::register_wesl_source(
+                $package.parse().unwrap(),
+                include_str!($path)
+            );
+        )+
+    };
+}
+
 static RESOLVER: LazyLock<Mutex<Resolver>> = LazyLock::new(Default::default);
 
 #[derive(Default)]

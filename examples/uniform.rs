@@ -37,10 +37,7 @@ struct WaveMaterial {
 }
 
 fn main() {
-    Shader::register_wesl_source(
-        "package::wave".parse().unwrap(),
-        include_str!("shaders/wave.wgsl"),
-    );
+    wesl_shaders!("package::wave" => "shaders/wave.wgsl");
 
     let mut app = App::<State>::new(init_state);
 
