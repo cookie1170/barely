@@ -12,4 +12,13 @@ impl Context<'_> {
     pub fn delta_secs(&self) -> f32 {
         self.delta_time().as_secs_f32()
     }
+
+    #[must_use]
+    pub fn events(&self) -> &[winit::event::WindowEvent] {
+        self.events
+    }
+
+    pub fn exit(&mut self) {
+        self.should_exit = true;
+    }
 }

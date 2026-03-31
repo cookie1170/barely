@@ -48,6 +48,8 @@ pub struct EventLoopHandle<S: 'static> {
     input_state: InputState,
     /// The current input state for fixed updates. Has to be different because otherwise `just_pressed` events may get swallowed
     fixed_input_state: InputState,
+    /// Window events since the last update
+    window_events: Vec<WindowEvent>,
     /// The current state of the app
     state: Option<S>,
 }
@@ -119,6 +121,10 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
             return;
         };
 
+        if !matches!(event, WindowEvent::RedrawRequested) {
+            self.window_events.push(event.clone());
+        }
+
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => handle.resize(size),
@@ -172,16 +178,14 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                             label: Some("Command encoder"),
                         });
 
-                // handle
-                //     .window
-                //     .set_title(&format!("FPS: {:.02}", 1.0 / delta_time.as_secs_f32()));
-
                 let mut context = Context {
                     handle,
                     view: &view,
                     encoder: &mut encoder,
                     delta_time,
                     input_state: &self.input_state,
+                    events: &self.window_events,
+                    should_exit: false,
                 };
 
                 let state = self
@@ -189,8 +193,14 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                     .get_or_insert_with(|| self.functions.get_state(&mut context));
 
                 self.functions.run_update(state, &mut context);
+
+                if context.should_exit {
+                    event_loop.exit();
+                }
+
                 // we ran the update, now clear the input
                 self.input_state.on_update();
+                self.window_events.clear();
 
                 handle.queue.submit(std::iter::once(encoder.finish()));
                 output.present();
@@ -254,6 +264,7 @@ impl<S> EventLoopHandle<S> {
             handle: None,
             input_state: InputState::default(),
             fixed_input_state: InputState::default(),
+            window_events: vec![],
         }
     }
 

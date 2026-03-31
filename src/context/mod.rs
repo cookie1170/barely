@@ -9,6 +9,8 @@ pub struct Context<'a> {
     pub view: &'a wgpu::TextureView,
     pub(crate) delta_time: Duration,
     pub(crate) input_state: &'a InputState,
+    pub(crate) events: &'a [winit::event::WindowEvent],
+    pub(crate) should_exit: bool,
 }
 
 pub struct FixedContext<'a> {
