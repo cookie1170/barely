@@ -146,7 +146,6 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                 handle.window.request_redraw();
 
                 if handle.surface.get_configuration().is_none() {
-                    log::warn!("not configured");
                     // not configured, can't use it!
                     return;
                 }
@@ -261,7 +260,7 @@ impl<S> EventLoopHandle<S> {
     /// Runs the event loop
     ///
     /// # Errors
-    /// When `EventLoop::run_app` fails (see [`EventLoopError`](winit::error::EventLoopError))
+    /// When `EventLoop::run_app` fails (see [`EventLoopError`])
     pub fn run(
         #[allow(unused_mut, reason = "used on native but not wasm")] mut self,
         event_loop: EventLoop<GraphicsHandle>,
@@ -279,10 +278,10 @@ impl<S> EventLoopHandle<S> {
     }
 }
 
-/// Creates a new [`EventLoop`](winit::event_loop::EventLoop)
+/// Creates a new [`EventLoop`]
 ///
 /// # Errors
-/// When creating the event loop fails (see [`EventLoopError`](winit::error::EventLoopError))
+/// When creating the event loop fails (see [`EventLoopError`])
 pub fn create_event_loop() -> Result<EventLoop<GraphicsHandle>, EventLoopError> {
     EventLoop::with_user_event().build()
 }

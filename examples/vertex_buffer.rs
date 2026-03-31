@@ -1,6 +1,6 @@
 use barely::prelude::*;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 struct State {
     material: MaterialHandle<CoolMaterial>,
     vertex_buffer: VecBuffer<Vertex>,
@@ -25,7 +25,8 @@ fn main() {
     app.run();
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[repr(C)]
+#[derive(Debug, PartialEq, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct CoolMaterial;
 
 impl Material for CoolMaterial {

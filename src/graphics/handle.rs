@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use log::warn;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -30,7 +29,7 @@ pub struct GraphicsConfig {
 }
 
 impl GraphicsHandle {
-    /// Creates a new [`GraphicsHandle`] with the given [`GraphicsConfig`] and using the given [`Window`](winit::window::Window)
+    /// Creates a new [`GraphicsHandle`] with the given [`GraphicsConfig`] and using the given [`Window`]
     ///
     /// # Errors
     /// - when creating a [`wgpu::Surface`] fails
@@ -104,7 +103,6 @@ impl GraphicsHandle {
 
     pub fn resize(&mut self, size: PhysicalSize<u32>) {
         if size.height == 0 || size.width == 0 {
-            warn!("window size must not be 0!");
             return;
         }
 

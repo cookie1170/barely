@@ -1,17 +1,16 @@
-use std::cell::RefCell;
+use std::cell::Cell;
 
 use crate::context::Context;
 use crate::graphics::buffer::GetBuffer;
 use crate::graphics::handle::GraphicsHandle;
 
-#[derive(Debug, PartialEq, Clone)]
 pub struct VecBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     pub items: Vec<T>,
     pub usage: wgpu::BufferUsages,
-    buffer: RefCell<wgpu::Buffer>,
+    buffer: Cell<wgpu::Buffer>,
 }
 
 impl Context<'_> {
@@ -21,18 +20,12 @@ impl Context<'_> {
         usage: wgpu::BufferUsages,
     ) -> VecBuffer<T>
     where
-        T: bytemuck::Pod + bytemuck::Zeroable,
+        T: bytemuck::Pod,
     {
         let usage = usage | wgpu::BufferUsages::COPY_DST;
         let items = items.into();
 
-        let buffer = self.handle.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Vec buffer"),
-            size: (items.len() * size_of::<T>()) as u64,
-            usage,
-            mapped_at_creation: false,
-        });
-
+        let buffer = VecBuffer::<T>::create_buffer(items.len(), usage, &self.handle.device);
         VecBuffer {
             items,
             usage,
@@ -43,7 +36,7 @@ impl Context<'_> {
 
 impl<T> VecBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     pub fn items(&self) -> &[T] {
         &self.items
@@ -52,28 +45,37 @@ where
     pub fn usage(&self) -> wgpu::BufferUsages {
         self.usage
     }
+
+    fn create_buffer(len: usize, usage: wgpu::BufferUsages, device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Vec buffer"),
+            size: (len * size_of::<T>()) as u64,
+            usage,
+            mapped_at_creation: false,
+        })
+    }
 }
 
 impl<T> GetBuffer for VecBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     fn get_buffer(&self, handle: &GraphicsHandle) -> &wgpu::Buffer {
         let size = (self.items.len() * size_of::<T>()) as u64;
-        if self.buffer.borrow().size() != size {
-            let buffer = handle.device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("Vec buffer"),
-                size,
-                usage: self.usage(),
-                mapped_at_creation: false,
-            });
+        // SAFETY: if a reference to `self.buffer` exists, then the mutating branch below will not be reached
+        let buffer = unsafe { &*self.buffer.as_ptr() };
+        if buffer.size() != size {
+            let buffer =
+                VecBuffer::<T>::create_buffer(self.items.len(), self.usage, &handle.device);
 
-            *self.buffer.borrow_mut() = buffer;
+            // SAFETY: this branch is only reachable if `self.items` is mutated, which can only happend if no reference to `self.buffer` exists
+            unsafe {
+                *self.buffer.as_ptr() = buffer;
+            }
         }
 
         // SAFETY: if a reference to `self.buffer` exists, then the mutating branch above will not be reached
-        // so borrowing unguarded here is okay, since direct access to the `RefCell` is never given outside of this method
-        let buffer = unsafe { self.buffer.try_borrow_unguarded() }.unwrap();
+        let buffer = unsafe { &*self.buffer.as_ptr() };
 
         handle
             .queue
@@ -88,5 +90,26 @@ where
     )]
     fn get_length(&self) -> u32 {
         self.items.len() as u32
+    }
+}
+
+impl<T: PartialEq> PartialEq for VecBuffer<T>
+where
+    T: bytemuck::Pod,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.items == other.items && self.usage == other.usage
+    }
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for VecBuffer<T>
+where
+    T: bytemuck::Pod,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VecBuffer")
+            .field("items", &self.items)
+            .field("usage", &self.usage)
+            .finish_non_exhaustive()
     }
 }

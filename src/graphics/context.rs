@@ -23,6 +23,7 @@ impl Context<'_> {
 
         pass.set_pipeline(pipeline);
         pass.set_vertex_buffer(0, buffer.get_buffer(self.handle).slice(..));
+        material.update_pass(&mut pass);
         pass.draw(0..buffer.get_length(), 0..1);
     }
 
@@ -35,12 +36,13 @@ impl Context<'_> {
         let mut pass = RenderPassBuilder::load("Draw vertices", self.view, self.encoder);
 
         let pipeline = material.get_pipeline();
+        pass.set_pipeline(pipeline);
         pass.set_vertex_buffer(0, vertex_buffer.get_buffer(self.handle).slice(..));
         pass.set_index_buffer(
             index_buffer.get_buffer(self.handle).slice(..),
             wgpu::IndexFormat::Uint32,
         );
-        pass.set_pipeline(pipeline);
+        material.update_pass(&mut pass);
         pass.draw_indexed(0..index_buffer.get_length(), 0, 0..1);
     }
 }

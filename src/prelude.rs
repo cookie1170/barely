@@ -1,4 +1,5 @@
 pub use log::{debug, error, info, trace, warn};
+pub use wesl::ModulePath;
 pub use wgpu::BufferUsages;
 pub use winit::keyboard::KeyCode;
 

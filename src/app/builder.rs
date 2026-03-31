@@ -2,10 +2,11 @@ use std::time::Duration;
 
 use winit::window::WindowAttributes;
 
+use crate::app::App;
 use crate::event_loop::function_set::{FixedUpdate, Update};
 use crate::graphics::handle::GraphicsConfig;
 
-impl<S> super::App<S> {
+impl<S> App<S> {
     /// Sets [`init_logger`](App::init_logger)
     pub fn init_logger(&mut self) -> &mut Self {
         self.init_logger = false;

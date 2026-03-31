@@ -1,8 +1,9 @@
-pub mod handle;
-
 use std::borrow::Cow;
 
-pub trait Material {
+pub mod handle;
+pub mod wesl;
+
+pub trait Material: bytemuck::Pod {
     fn shader() -> Shader;
 }
 

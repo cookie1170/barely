@@ -19,6 +19,7 @@ instant = { workspace = true }
 wasm_thread = "0.3.3"
 bytemuck = { version = "1.25.0", features = ["derive"] }
 glam = { version = "0.32.1", features = ["bytemuck"] }
+wesl = "0.3.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"

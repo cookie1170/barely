@@ -7,7 +7,7 @@ use crate::graphics::handle::GraphicsHandle;
 #[derive(Debug, PartialEq, Clone)]
 pub struct SliceBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     items: Box<[T]>,
     usage: wgpu::BufferUsages,
@@ -21,7 +21,7 @@ impl Context<'_> {
         usage: wgpu::BufferUsages,
     ) -> SliceBuffer<T>
     where
-        T: bytemuck::Pod + bytemuck::Zeroable,
+        T: bytemuck::Pod,
     {
         let items = items.into();
 
@@ -44,7 +44,7 @@ impl Context<'_> {
 
 impl<T> SliceBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     #[must_use]
     pub fn items(&self) -> &[T] {
@@ -59,7 +59,7 @@ where
 
 impl<T> GetBuffer for SliceBuffer<T>
 where
-    T: bytemuck::Pod + bytemuck::Zeroable,
+    T: bytemuck::Pod,
 {
     fn get_buffer(&self, _handle: &GraphicsHandle) -> &wgpu::Buffer {
         &self.buffer
