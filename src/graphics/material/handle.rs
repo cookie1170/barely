@@ -23,7 +23,7 @@ impl<M: Material> MaterialHandle<M> {
     fn create_uniform_buffer(device: &wgpu::Device) -> Option<wgpu::Buffer> {
         if size_of::<M>() == 0 {
             return None;
-        };
+        }
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Uniform buffer"),
             size: size_of::<M>() as u64,
@@ -102,6 +102,7 @@ impl Context<'_> {
 
         let shader = M::shader();
         let modules = shader.source.create_shader_modules(device);
+        let mesh_config = M::config();
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render pipeline"),
@@ -109,28 +110,20 @@ impl Context<'_> {
             vertex: wgpu::VertexState {
                 module: modules.vertex(),
                 entry_point: shader.vertex,
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                compilation_options: mesh_config.vertex_compilation_options,
                 buffers: &[Vertex::buffer_layout()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: modules.fragment(),
                 entry_point: shader.fragment,
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+                compilation_options: mesh_config.fragment_compilation_options,
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
+                    blend: mesh_config.blend,
+                    write_mask: mesh_config.write_mask,
                 })],
             }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
+            primitive: mesh_config.primitive,
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,

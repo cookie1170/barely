@@ -5,14 +5,29 @@ pub mod wesl;
 
 pub trait Material: bytemuck::Pod {
     fn shader() -> Shader;
+
+    fn config() -> MeshConfig {
+        MeshConfig::default()
+    }
 }
 
+#[derive(Debug, Clone)]
 pub struct Shader {
     pub source: ShaderSource,
     pub vertex: Option<&'static str>,
     pub fragment: Option<&'static str>,
 }
 
+#[derive(Debug, Clone)]
+pub struct MeshConfig {
+    pub vertex_compilation_options: wgpu::PipelineCompilationOptions<'static>,
+    pub fragment_compilation_options: wgpu::PipelineCompilationOptions<'static>,
+    pub blend: Option<wgpu::BlendState>,
+    pub write_mask: wgpu::ColorWrites,
+    pub primitive: wgpu::PrimitiveState,
+}
+
+#[derive(Debug, Clone)]
 pub enum ShaderSource {
     Single(wgpu::ShaderSource<'static>),
     Split {
@@ -21,6 +36,7 @@ pub enum ShaderSource {
     },
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum ShaderModules {
     Single(wgpu::ShaderModule),
     Split {
@@ -85,6 +101,26 @@ impl ShaderSource {
 
                 ShaderModules::Split { vertex, fragment }
             }
+        }
+    }
+}
+
+impl Default for MeshConfig {
+    fn default() -> Self {
+        Self {
+            vertex_compilation_options: wgpu::PipelineCompilationOptions::default(),
+            fragment_compilation_options: wgpu::PipelineCompilationOptions::default(),
+            blend: Some(wgpu::BlendState::REPLACE),
+            write_mask: wgpu::ColorWrites::ALL,
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
         }
     }
 }
