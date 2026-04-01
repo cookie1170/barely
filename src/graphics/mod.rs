@@ -1,4 +1,5 @@
 pub mod buffer;
+pub mod camera;
 pub mod color;
 mod context;
 pub mod handle;

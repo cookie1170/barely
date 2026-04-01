@@ -4,6 +4,8 @@ use anyhow::Context;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
+use crate::prelude::*;
+
 #[derive(Debug)]
 pub struct GraphicsHandle {
     pub surface: wgpu::Surface<'static>,
@@ -11,6 +13,9 @@ pub struct GraphicsHandle {
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
     pub window: Arc<Window>,
+    pub(crate) camera_buffer: wgpu::Buffer,
+    pub(crate) camera_bind_group: wgpu::BindGroup,
+    pub(crate) camera_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 #[derive(Debug, Clone)]
@@ -92,12 +97,52 @@ impl GraphicsHandle {
             view_formats: vec![],
         };
 
+        let camera_bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+            label: Some("Camera bind group layout"),
+        };
+
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&camera_bind_group_layout_descriptor);
+
+        let camera_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Camera buffer"),
+            size: size_of::<Mat4>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        queue.write_buffer(&camera_buffer, 0, bytemuck::cast_slice(&[Mat4::IDENTITY]));
+
+        let camera_bind_group_desciptor = &wgpu::BindGroupDescriptor {
+            label: Some("Camera bind group"),
+            layout: &camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buffer.as_entire_binding(),
+            }],
+        };
+
+        let camera_bind_group = device.create_bind_group(camera_bind_group_desciptor);
+
         Ok(Self {
             surface,
             device,
             queue,
             config,
             window,
+            camera_buffer,
+            camera_bind_group,
+            camera_bind_group_layout,
         })
     }
 

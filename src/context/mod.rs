@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::graphics::handle::GraphicsHandle;
-use crate::prelude::InputState;
+use crate::prelude::*;
 
 pub struct Context<'a> {
     pub handle: &'a mut GraphicsHandle,

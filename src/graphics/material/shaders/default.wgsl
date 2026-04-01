@@ -8,16 +8,8 @@ struct VertexOutput {
     @location(0) color: vec4f,
 };
 
-struct WaveMaterial {
-    // webgl structs must be 16 byte aligned
-    @ if(sixteen_byte_align)
-    _webgl2_padding: vec2f,
-    amplitude: f32,
-    time: f32,
-}
-
-@group(1) @binding(0)
-var<uniform> material: WaveMaterial;
+@group(0) @binding(0)
+var<uniform> camera_matrix: mat4x4f;
 
 @vertex
 fn vs_main(
@@ -25,11 +17,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = model.color;
-    out.clip_position = vec4f(model.position, 1.0);
-
-    let offset = saturate(out.clip_position.y) * sin(material.time);
-    out.clip_position.x += offset * material.amplitude;
-
+    out.clip_position = camera_matrix * vec4f(model.position, 1.0);
     return out;
 }
 

@@ -23,6 +23,7 @@ impl Context<'_> {
 
         pass.set_pipeline(pipeline);
         pass.set_vertex_buffer(0, buffer.get_buffer(self.handle).slice(..));
+        pass.set_bind_group(0, &self.handle.camera_bind_group, &[]);
         material.update_pass(&mut pass);
         pass.draw(0..buffer.get_length(), 0..1);
     }

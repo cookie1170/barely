@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+pub mod default;
 pub mod handle;
 pub mod wesl;
 

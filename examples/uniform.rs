@@ -28,11 +28,12 @@ struct State {
 }
 
 #[repr(C)]
-#[derive(Debug, PartialEq, Clone, Copy, Default, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, PartialEq, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct WaveMaterial {
     // WebGL2 requires uniforms to be 16-byte aligned
     #[cfg(target_arch = "wasm32")]
-    _webgl_padding: Vec3,
+    _webgl_padding: Vec2,
+    amplitude: f32,
     time: f32,
 }
 
@@ -66,5 +67,16 @@ fn init_state(ctx: &mut Context) -> State {
 impl Material for WaveMaterial {
     fn shader() -> Shader {
         Shader::wesl(&"package::wave".parse().unwrap())
+    }
+}
+
+impl Default for WaveMaterial {
+    fn default() -> Self {
+        Self {
+            #[cfg(target_arch = "wasm32")]
+            _webgl_padding: Default::default(),
+            amplitude: 0.25,
+            time: Default::default(),
+        }
     }
 }
