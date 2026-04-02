@@ -2,7 +2,6 @@ use wgpu::util::DeviceExt;
 
 use crate::context::Context;
 use crate::graphics::buffer::GetBuffer;
-use crate::graphics::handle::GraphicsHandle;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct SliceBuffer<T>
@@ -26,7 +25,6 @@ impl Context<'_> {
         let items = items.into();
 
         let buffer = self
-            .handle
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
@@ -61,7 +59,7 @@ impl<T> GetBuffer for SliceBuffer<T>
 where
     T: bytemuck::Pod,
 {
-    fn get_buffer(&self, _handle: &GraphicsHandle) -> &wgpu::Buffer {
+    fn get_buffer(&self, _ctx: &Context) -> &wgpu::Buffer {
         &self.buffer
     }
 

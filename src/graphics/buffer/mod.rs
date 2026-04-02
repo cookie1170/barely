@@ -1,9 +1,9 @@
-use crate::graphics::handle::GraphicsHandle;
+use crate::context::Context;
 
 pub mod slice;
 pub mod vec;
 
 pub trait GetBuffer {
-    fn get_buffer(&self, handle: &GraphicsHandle) -> &wgpu::Buffer;
+    fn get_buffer(&self, ctx: &Context) -> &wgpu::Buffer;
     fn get_length(&self) -> u32;
 }

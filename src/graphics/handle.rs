@@ -121,8 +121,6 @@ impl GraphicsHandle {
             mapped_at_creation: false,
         });
 
-        queue.write_buffer(&camera_buffer, 0, bytemuck::cast_slice(&[Mat4::IDENTITY]));
-
         let camera_bind_group_desciptor = &wgpu::BindGroupDescriptor {
             label: Some("Camera bind group"),
             layout: &camera_bind_group_layout,

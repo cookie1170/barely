@@ -83,11 +83,10 @@ impl Camera for OrthographicCamera {
     }
 }
 
-impl<'a> Context<'a> {
+impl Context<'_> {
     pub fn set_projection_matrix(&mut self, mat: Mat4) {
-        self.handle
-            .queue
-            .write_buffer(&self.handle.camera_buffer, 0, bytemuck::cast_slice(&[mat]));
+        self.queue
+            .write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[mat]));
     }
 
     pub fn set_camera(&mut self, camera: impl Camera) {
@@ -95,15 +94,15 @@ impl<'a> Context<'a> {
     }
 
     pub fn camera_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
-        &self.handle.camera_bind_group_layout
+        &self.camera_bind_group_layout
     }
 
     pub fn camera_bind_group(&self) -> &wgpu::BindGroup {
-        &self.handle.camera_bind_group
+        &self.camera_bind_group
     }
 
     pub fn screen_size(&self) -> Vec2 {
-        let size = self.handle.window.inner_size();
+        let size = self.window.inner_size();
         Vec2::new(size.width as f32, size.height as f32)
     }
 }

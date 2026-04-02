@@ -72,10 +72,10 @@ impl<M: Material> MaterialHandle<M> {
 
 impl Context<'_> {
     pub fn create_material_handle<M: Material>(&mut self, material: M) -> MaterialHandle<M> {
-        let (device, config) = (&self.handle.device, &self.handle.config);
+        let (device, config) = (&self.device, &self.config);
 
         let (bind_group_layout, bind_group, uniform_buffer) = 'create_group: {
-            let uniform_buffer = MaterialHandle::<M>::create_uniform_buffer(&self.handle.device);
+            let uniform_buffer = MaterialHandle::<M>::create_uniform_buffer(&self.device);
 
             let Some(uniform_buffer) = uniform_buffer else {
                 break 'create_group (None, None, None);
@@ -97,7 +97,7 @@ impl Context<'_> {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[
-                    Some(&self.handle.camera_bind_group_layout),
+                    Some(&self.camera_bind_group_layout),
                     bind_group_layout.as_ref(),
                 ],
                 immediate_size: 0,
@@ -154,21 +154,20 @@ impl Context<'_> {
             return;
         };
 
-        self.handle
-            .queue
+        self.queue
             .write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[handle.inner]));
     }
 
     pub fn update_material_handle_size<M: Material>(&mut self, handle: &mut MaterialHandle<M>) {
-        handle.uniform_buffer = MaterialHandle::<M>::create_uniform_buffer(&self.handle.device);
+        handle.uniform_buffer = MaterialHandle::<M>::create_uniform_buffer(&self.device);
 
         let Some(uniform_buffer) = &handle.uniform_buffer else {
             return;
         };
 
-        let layout = MaterialHandle::<M>::create_bind_group_layout(&self.handle.device);
+        let layout = MaterialHandle::<M>::create_bind_group_layout(&self.device);
         handle.bind_group = Some(MaterialHandle::<M>::create_bind_group(
-            &self.handle.device,
+            &self.device,
             uniform_buffer,
             &layout,
         ));

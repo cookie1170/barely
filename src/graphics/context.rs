@@ -17,13 +17,14 @@ impl Context<'_> {
         buffer: &impl GetBuffer,
         material: &MaterialHandle<M>,
     ) {
+        let vertex_buffer = buffer.get_buffer(&self);
         let mut pass = RenderPassBuilder::load("Draw vertices unindexed", self.view, self.encoder);
 
         let pipeline = material.get_pipeline();
 
         pass.set_pipeline(pipeline);
-        pass.set_vertex_buffer(0, buffer.get_buffer(self.handle).slice(..));
-        pass.set_bind_group(0, &self.handle.camera_bind_group, &[]);
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        pass.set_bind_group(0, self.camera_bind_group, &[]);
         material.update_pass(&mut pass);
         pass.draw(0..buffer.get_length(), 0..1);
     }
@@ -34,16 +35,17 @@ impl Context<'_> {
         index_buffer: &impl GetBuffer,
         material: &MaterialHandle<M>,
     ) {
+        let index_count = index_buffer.get_length();
+        let index_buffer = index_buffer.get_buffer(self);
+        let vertex_buffer = vertex_buffer.get_buffer(self);
         let mut pass = RenderPassBuilder::load("Draw vertices", self.view, self.encoder);
 
         let pipeline = material.get_pipeline();
         pass.set_pipeline(pipeline);
-        pass.set_vertex_buffer(0, vertex_buffer.get_buffer(self.handle).slice(..));
-        pass.set_index_buffer(
-            index_buffer.get_buffer(self.handle).slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
+        pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        pass.set_bind_group(0, self.camera_bind_group, &[]);
         material.update_pass(&mut pass);
-        pass.draw_indexed(0..index_buffer.get_length(), 0, 0..1);
+        pass.draw_indexed(0..index_count, 0, 0..1);
     }
 }

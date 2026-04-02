@@ -17,6 +17,7 @@ use winit::window::WindowAttributes;
 use crate::context::{Context, FixedContext};
 use crate::event_loop::input::InputState;
 use crate::graphics::handle::{GetSurfaceTextureResult, GraphicsConfig, GraphicsHandle};
+use crate::prelude::*;
 
 mod context;
 pub mod function_set;
@@ -179,7 +180,14 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                         });
 
                 let mut context = Context {
-                    handle,
+                    surface: &mut handle.surface,
+                    device: &mut handle.device,
+                    queue: &mut handle.queue,
+                    config: &mut handle.config,
+                    window: &*handle.window,
+                    camera_buffer: &handle.camera_buffer,
+                    camera_bind_group: &handle.camera_bind_group,
+                    camera_bind_group_layout: &handle.camera_bind_group_layout,
                     view: &view,
                     encoder: &mut encoder,
                     delta_time,
@@ -187,6 +195,8 @@ impl<S> ApplicationHandler<GraphicsHandle> for EventLoopHandle<S> {
                     events: &self.window_events,
                     should_exit: false,
                 };
+
+                context.set_projection_matrix(Mat4::IDENTITY);
 
                 let state = self
                     .state

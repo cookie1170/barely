@@ -2,7 +2,6 @@ use std::cell::Cell;
 
 use crate::context::Context;
 use crate::graphics::buffer::GetBuffer;
-use crate::graphics::handle::GraphicsHandle;
 
 pub struct VecBuffer<T>
 where
@@ -25,7 +24,7 @@ impl Context<'_> {
         let usage = usage | wgpu::BufferUsages::COPY_DST;
         let items = items.into();
 
-        let buffer = VecBuffer::<T>::create_buffer(items.len(), usage, &self.handle.device);
+        let buffer = VecBuffer::<T>::create_buffer(items.len(), usage, &self.device);
         VecBuffer {
             items,
             usage,
@@ -60,13 +59,12 @@ impl<T> GetBuffer for VecBuffer<T>
 where
     T: bytemuck::Pod,
 {
-    fn get_buffer(&self, handle: &GraphicsHandle) -> &wgpu::Buffer {
+    fn get_buffer(&self, ctx: &Context) -> &wgpu::Buffer {
         let size = (self.items.len() * size_of::<T>()) as u64;
         // SAFETY: if a reference to `self.buffer` exists, then the mutating branch below will not be reached
         let buffer = unsafe { &*self.buffer.as_ptr() };
         if buffer.size() != size {
-            let buffer =
-                VecBuffer::<T>::create_buffer(self.items.len(), self.usage, &handle.device);
+            let buffer = VecBuffer::<T>::create_buffer(self.items.len(), self.usage, &ctx.device);
 
             // SAFETY: this branch is only reachable if `self.items` is mutated, which can only happend if no reference to `self.buffer` exists
             unsafe {
@@ -77,8 +75,7 @@ where
         // SAFETY: if a reference to `self.buffer` exists, then the mutating branch above will not be reached
         let buffer = unsafe { &*self.buffer.as_ptr() };
 
-        handle
-            .queue
+        ctx.queue
             .write_buffer(buffer, 0, bytemuck::cast_slice(&self.items));
 
         buffer
